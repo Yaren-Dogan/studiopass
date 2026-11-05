@@ -12,7 +12,7 @@
 ![TypeScript](https://img.shields.io/badge/typescript-strict-0F5C55)
 ![WCAG 2.2 AA](https://img.shields.io/badge/WCAG-2.2%20AA-1D6B37)
 
-[Figma](https://www.figma.com/design/gKfS7dCMKRTlJrJPEh8TRU) · [Gereksinimler](docs/01-analiz/gereksinimler.md) · [Test raporu](docs/05-test/test-raporu-v1.0.md) · [Hata kayıtları](docs/05-test/hata-kayitlari/) · [Yapay zekâ kodu inceleme notları](docs/07-yapay-zeka-inceleme/inceleme-notlari.md)
+📄 **[Proje dokümanı (PDF)](docs/StudioPass-Proje-Dokumani.pdf)** · [Figma](https://www.figma.com/design/gKfS7dCMKRTlJrJPEh8TRU) · [Gereksinimler](docs/01-analiz/gereksinimler.md) · [Test raporu](docs/05-test/test-raporu-v1.0.md) · [Hata kayıtları](docs/05-test/hata-kayitlari/) · [Yapay zekâ kodu inceleme notları](docs/07-yapay-zeka-inceleme/inceleme-notlari.md)
 
 </div>
 
