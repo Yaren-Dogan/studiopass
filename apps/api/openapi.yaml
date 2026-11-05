@@ -1,0 +1,387 @@
+openapi: 3.0.3
+info:
+  title: StudioPass API
+  version: 1.0.0
+  description: |
+    Butik stüdyolar için üyelik ve abonelik yönetimi.
+
+    **Demo kullanıcılar** (şifre `Studio123!`):
+    `elif@studiopass.dev` (sahip) · `mert@studiopass.dev` (yönetici) · `deniz@studiopass.dev` (eğitmen)
+
+    Sağ üstteki **Authorize** butonuna `/api/auth/login` yanıtındaki token'ı girin.
+
+    Tüm hatalar aynı biçimdedir: `{ "error": { "code": "...", "message": "...", "fields": { ... } } }`
+servers:
+  - url: http://localhost:4000
+tags:
+  - name: Kimlik
+  - name: Üyeler
+  - name: Planlar
+  - name: Dersler
+  - name: Özet
+security:
+  - bearer: []
+
+paths:
+  /api/auth/login:
+    post:
+      tags: [Kimlik]
+      summary: Giriş yap (FR-01)
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LoginRequest" }
+            example: { email: elif@studiopass.dev, password: Studio123! }
+      responses:
+        "200":
+          description: Başarılı giriş
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LoginResponse" }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "401":
+          description: E-posta veya şifre hatalı (hangi alanın hatalı olduğu belirtilmez)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+  /api/auth/me:
+    get:
+      tags: [Kimlik]
+      summary: Oturumdaki kullanıcı
+      responses:
+        "200":
+          description: Kullanıcı
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: { user: { $ref: "#/components/schemas/User" } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /api/members:
+    get:
+      tags: [Üyeler]
+      summary: Üyeleri listele, ara, filtrele (FR-04, FR-13)
+      description: Eğitmen rolünde `email` ve `phone` alanları döndürülmez ve e-postada arama yapılmaz (FR-03).
+      parameters:
+        - { name: search, in: query, schema: { type: string }, description: "Ad, soyad, e-posta. Türkçe karakter ve büyük/küçük harf duyarsız." }
+        - { name: status, in: query, schema: { type: string, enum: [all, active, expired, none, inactive] } }
+        - { name: page, in: query, schema: { type: integer, minimum: 1, default: 1 } }
+      responses:
+        "200":
+          description: Sayfalanmış liste (20 kayıt)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items: { type: array, items: { $ref: "#/components/schemas/Member" } }
+                  total: { type: integer }
+                  page: { type: integer }
+                  pageSize: { type: integer, example: 20 }
+                  totalPages: { type: integer }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    post:
+      tags: [Üyeler]
+      summary: Üye ekle (FR-05) — sahip, yönetici
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/MemberInput" }
+            example: { firstName: Ayşe, lastName: Yılmaz, email: ayse@ornek.com, phone: "0532 111 22 33" }
+      responses:
+        "201": { description: Oluşturuldu, content: { application/json: { schema: { $ref: "#/components/schemas/Member" } } } }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { description: "EMAIL_TAKEN — bu e-posta ile kayıtlı üye var", content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+  /api/members/{id}:
+    parameters: [{ $ref: "#/components/parameters/Id" }]
+    get:
+      tags: [Üyeler]
+      summary: Üye detayı ve plan geçmişi
+      responses:
+        "200": { description: Üye, content: { application/json: { schema: { $ref: "#/components/schemas/MemberDetail" } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+    patch:
+      tags: [Üyeler]
+      summary: Üyeyi güncelle — sahip, yönetici
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/MemberInput" }
+      responses:
+        "200": { description: Güncellendi, content: { application/json: { schema: { $ref: "#/components/schemas/Member" } } } }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "409": { description: EMAIL_TAKEN }
+  /api/members/{id}/deactivate:
+    parameters: [{ $ref: "#/components/parameters/Id" }]
+    post:
+      tags: [Üyeler]
+      summary: Üyeyi pasife al (FR-12) — silmez
+      responses:
+        "200": { description: Pasif üye, content: { application/json: { schema: { $ref: "#/components/schemas/Member" } } } }
+  /api/members/{id}/activate:
+    parameters: [{ $ref: "#/components/parameters/Id" }]
+    post:
+      tags: [Üyeler]
+      summary: Pasif üyeyi yeniden etkinleştir
+      responses:
+        "200": { description: Üye }
+  /api/members/{id}/memberships:
+    parameters: [{ $ref: "#/components/parameters/Id" }]
+    post:
+      tags: [Üyeler]
+      summary: Üyeye plan ata (FR-06, BR-01)
+      description: Bitiş = başlangıç + plan süresi. Varsa aktif üyelik bugün kapatılır.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [planId]
+              properties:
+                planId: { type: string }
+                startDate: { type: string, format: date, description: "Varsayılan bugün" }
+      responses:
+        "201": { description: Atandı }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "422": { description: "PLAN_NOT_ON_SALE veya MEMBER_INACTIVE" }
+
+  /api/plans:
+    get:
+      tags: [Planlar]
+      summary: Planları listele
+      responses:
+        "200":
+          description: Planlar
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: { items: { type: array, items: { $ref: "#/components/schemas/Plan" } } }
+    post:
+      tags: [Planlar]
+      summary: Plan oluştur (FR-08) — sadece sahip
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PlanInput" }
+            example: { name: 10 Ders Paketi, priceKurus: 125000, durationDays: 60, monthlyClassLimit: 10 }
+      responses:
+        "201": { description: Oluşturuldu }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /api/plans/{id}:
+    parameters: [{ $ref: "#/components/parameters/Id" }]
+    patch:
+      tags: [Planlar]
+      summary: Planı güncelle veya satıştan kaldır (BR-04) — sadece sahip
+      requestBody:
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: "#/components/schemas/PlanInput"
+                - type: object
+                  properties: { isOnSale: { type: boolean } }
+      responses:
+        "200": { description: Güncellendi }
+
+  /api/classes:
+    get:
+      tags: [Dersler]
+      summary: Dersleri listele (varsayılan bu hafta, Pazartesi başlangıçlı)
+      parameters:
+        - { name: from, in: query, schema: { type: string, format: date } }
+        - { name: to, in: query, schema: { type: string, format: date }, description: "Dahil değil" }
+        - { name: mine, in: query, schema: { type: boolean }, description: Sadece oturumdaki eğitmenin dersleri }
+      responses:
+        "200": { description: Dersler }
+    post:
+      tags: [Dersler]
+      summary: Ders oluştur (FR-09) — sahip, yönetici
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ClassInput" }
+      responses:
+        "201": { description: Oluşturuldu }
+        "400": { $ref: "#/components/responses/ValidationError" }
+  /api/classes/{id}:
+    parameters: [{ $ref: "#/components/parameters/Id" }]
+    get:
+      tags: [Dersler]
+      summary: Ders detayı ve katılımcılar
+      responses:
+        "200": { description: Ders }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/classes/{id}/bookings:
+    parameters: [{ $ref: "#/components/parameters/Id" }]
+    post:
+      tags: [Dersler]
+      summary: Rezervasyon (FR-10, BR-03)
+      description: |
+        Kontrol sırası: geçmiş ders → mükerrer → aktif üyelik → kapasite.
+        Eğitmen sadece kendi dersine ekleyebilir.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [memberId]
+              properties: { memberId: { type: string } }
+      responses:
+        "201": { description: Rezervasyon oluştu }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { description: "CLASS_FULL veya ALREADY_BOOKED", content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+        "422": { description: "NO_ACTIVE_MEMBERSHIP veya CLASS_IN_PAST", content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+  /api/classes/{id}/bookings/{bookingId}:
+    delete:
+      tags: [Dersler]
+      summary: Rezervasyonu iptal et — sahip, yönetici
+      parameters:
+        - { $ref: "#/components/parameters/Id" }
+        - { name: bookingId, in: path, required: true, schema: { type: string } }
+      responses:
+        "204": { description: Silindi }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/instructors:
+    get:
+      tags: [Dersler]
+      summary: Eğitmen listesi
+      responses:
+        "200": { description: Eğitmenler }
+
+  /api/dashboard:
+    get:
+      tags: [Özet]
+      summary: Özet panel göstergeleri (FR-11) — sahip, yönetici
+      responses:
+        "200":
+          description: Göstergeler
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Dashboard" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+components:
+  securitySchemes:
+    bearer: { type: http, scheme: bearer, bearerFormat: JWT }
+  parameters:
+    Id: { name: id, in: path, required: true, schema: { type: string } }
+  responses:
+    Unauthorized: { description: "UNAUTHENTICATED / INVALID_TOKEN / TOKEN_EXPIRED", content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+    Forbidden: { description: "FORBIDDEN — rol yetkisi yok", content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+    NotFound: { description: Bulunamadı, content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+    ValidationError:
+      description: "VALIDATION_ERROR — alan bazlı hatalar `fields` içinde"
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+          example: { error: { code: VALIDATION_ERROR, message: Formda hatalı alanlar var, fields: { email: Geçerli bir e-posta adresi girin } } }
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code: { type: string }
+            message: { type: string }
+            fields: { type: object, additionalProperties: { type: string } }
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties: { email: { type: string, format: email }, password: { type: string } }
+    LoginResponse:
+      type: object
+      properties: { token: { type: string }, user: { $ref: "#/components/schemas/User" } }
+    User:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        email: { type: string }
+        role: { type: string, enum: [owner, manager, instructor] }
+    MemberInput:
+      type: object
+      required: [firstName, lastName, email]
+      properties:
+        firstName: { type: string, maxLength: 60 }
+        lastName: { type: string, maxLength: 60 }
+        email: { type: string, format: email }
+        phone: { type: string, nullable: true }
+    Member:
+      type: object
+      properties:
+        id: { type: string }
+        firstName: { type: string }
+        lastName: { type: string }
+        email: { type: string, description: Eğitmen rolünde yok }
+        phone: { type: string, nullable: true, description: Eğitmen rolünde yok }
+        status: { type: string, enum: [active, expired, none, inactive] }
+        expiringSoon: { type: boolean, description: "Aktif ve 7 gün içinde bitiyor" }
+        plan:
+          type: object
+          nullable: true
+          properties: { id: { type: string }, name: { type: string }, startDate: { type: string, format: date }, endDate: { type: string, format: date } }
+    MemberDetail:
+      allOf:
+        - $ref: "#/components/schemas/Member"
+        - type: object
+          properties:
+            history:
+              type: array
+              items:
+                type: object
+                properties: { planName: { type: string }, startDate: { type: string }, endDate: { type: string } }
+    PlanInput:
+      type: object
+      required: [name, priceKurus, durationDays]
+      properties:
+        name: { type: string }
+        priceKurus: { type: integer, minimum: 1, description: "KDV dahil, kuruş (₺1.250,00 = 125000)" }
+        durationDays: { type: integer, minimum: 1, maximum: 730 }
+        monthlyClassLimit: { type: integer, nullable: true, description: "null = sınırsız" }
+    Plan:
+      allOf:
+        - $ref: "#/components/schemas/PlanInput"
+        - type: object
+          properties:
+            id: { type: string }
+            isOnSale: { type: boolean }
+            activeMemberCount: { type: integer }
+    ClassInput:
+      type: object
+      required: [title, instructorId, startsAt, durationMin, capacity]
+      properties:
+        title: { type: string }
+        instructorId: { type: string }
+        startsAt: { type: string, format: date-time }
+        durationMin: { type: integer, minimum: 15, maximum: 240 }
+        capacity: { type: integer, minimum: 1, maximum: 50 }
+    Dashboard:
+      type: object
+      properties:
+        today: { type: string, format: date }
+        activeMembers: { type: integer }
+        expiredMembers: { type: integer }
+        expiringThisMonth:
+          type: object
+          properties:
+            count: { type: integer }
+            items: { type: array, items: { type: object, properties: { id: { type: string }, name: { type: string }, endDate: { type: string } } } }
+        weekOccupancy:
+          type: object
+          properties: { booked: { type: integer }, capacity: { type: integer }, rate: { type: integer }, classCount: { type: integer } }
+        planDistribution:
+          type: array
+          items: { type: object, properties: { planId: { type: string }, name: { type: string }, count: { type: integer } } }
+        monthlyRevenueKurus: { type: integer }
