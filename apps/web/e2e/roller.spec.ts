@@ -57,3 +57,24 @@ test.describe("US-02 Rol bazlı erişim", () => {
     await expect(dialog.getByText("Fiyat 0'dan büyük olmalı")).toBeVisible();
   });
 });
+
+test.describe("Veritabanı görüntüleyici", () => {
+  test("sahip SQLite tablolarını ve görünümleri görür", async ({ page }) => {
+    await loginAs(page, "owner");
+    await page.getByRole("navigation", { name: "Ana menü" }).getByRole("link", { name: "Veritabanı", exact: true }).click();
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Veritabanı");
+    const tabs = page.getByRole("navigation", { name: "Tablolar ve görünümler" });
+    for (const t of ["users", "members", "plans", "memberships", "class_sessions", "bookings", "v_member_status", "v_class_occupancy"]) {
+      await expect(tabs.getByRole("button", { name: new RegExp(`^${t},`) })).toBeVisible();
+    }
+    await tabs.getByRole("button", { name: /^bookings,/ }).click();
+    await expect(page.getByText("FK → members.id")).toBeVisible();
+    await tabs.getByRole("button", { name: /^users,/ }).click();
+    await expect(page.getByRole("cell", { name: /scrypt özeti gizlendi/ }).first()).toBeVisible();
+  });
+
+  test("yönetici menüde Veritabanı'nı görmez", async ({ page }) => {
+    await loginAs(page, "manager");
+    await expect(page.getByRole("navigation", { name: "Ana menü" }).getByRole("link", { name: "Veritabanı" })).toHaveCount(0);
+  });
+});

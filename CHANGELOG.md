@@ -2,6 +2,22 @@
 
 Biçim: [Keep a Changelog](https://keepachangelog.com/tr/1.1.0/) · Sürümleme: [SemVer](https://semver.org/lang/tr/)
 
+## [1.1.0] — 2026-11-05
+
+### Eklendi
+- **SQLite veritabanı** (ADR-005): veriler `apps/api/data/studiopass.db` dosyasında kalıcı; şemada UNIQUE, CHECK ve yabancı anahtar kısıtları
+- `v_member_status` ve `v_class_occupancy` görünümleri
+- **Panelde Veritabanı sayfası** (yalnız stüdyo sahibi): tablolar, sütunlar, PK/FK ve satırlar doğrudan SQL'den; `GET /api/admin/database`
+- `npm run db:tablolar` ve `npm run db:sifirla` komutları
+- Veritabanı testleri (round-trip, kısıt ihlalinde geri alma, mükerrer rezervasyon)
+- Proje dokümanı (PDF)
+
+### Değişti
+- Mobil alt menü 5 öğeye sığacak şekilde daraltıldı
+- Uçtan uca testler ayrı portta (4100/5174) ve ayrı veritabanı dosyasıyla çalışır; geliştirme verisi silinmez
+- Test komutları Windows'ta da çalışır (ortam değişkenleri `test/env.ts` içinde)
+- Gereken Node.js sürümü: 22.13+
+
 ## [1.0.0] — 2026-11-05
 
 ### Eklendi

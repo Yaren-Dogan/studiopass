@@ -3,17 +3,22 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "StudioPass REST API — çalışma zamanında sıfır dış bağımlılık (Node.js yerleşik modülleri)",
+  "description": "StudioPass REST API — çalışma zamanında sıfır dış bağımlılık (Node.js yerleşik modülleri: http, crypto, sqlite)",
   "scripts": {
-    "dev": "tsx watch src/server.ts",
-    "start": "tsx src/server.ts",
+    "dev": "tsx watch --no-warnings src/server.ts",
+    "start": "tsx --no-warnings src/server.ts",
     "build": "tsc -p tsconfig.json",
-    "test": "NODE_ENV=test STUDIOPASS_TODAY=2026-11-04 tsx --test test/*.test.ts",
-    "lint": "tsc -p tsconfig.json --noEmit"
+    "test": "tsx --no-warnings --import ./test/env.ts --test \"test/*.test.ts\"",
+    "lint": "tsc -p tsconfig.json --noEmit",
+    "db:tablolar": "tsx --no-warnings src/db/cli.ts tablolar",
+    "db:sifirla": "tsx --no-warnings src/db/cli.ts sifirla"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",
     "tsx": "^4.19.0",
     "typescript": "^5.7.0"
+  },
+  "engines": {
+    "node": ">=22.13"
   }
 }

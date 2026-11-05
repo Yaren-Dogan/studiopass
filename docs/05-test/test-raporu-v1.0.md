@@ -10,11 +10,11 @@
 
 | Paket | Komut | Test | Geçti | Kaldı |
 |---|---|---|---|---|
-| API (birim + entegrasyon) | `npm test -w @studiopass/api` | 48 | 48 | 0 |
+| API (birim + entegrasyon + veritabanı) | `npm test -w @studiopass/api` | 55 | 55 | 0 |
 | Web (birim) | `npm test -w @studiopass/web` | 20 | 20 | 0 |
-| Uçtan uca (Chrome masaüstü + mobil 390) | `npm run e2e` | 36 | 36 | 0 |
+| Uçtan uca (Chrome masaüstü + mobil 390) | `npm run e2e` | 38 | 38 | 0 |
 | Kontrast | `npm run check:contrast` | 13 çift | 13 | 0 |
-| **Toplam** | | **117** | **117** | **0** |
+| **Toplam** | | **126** | **126** | **0** |
 
 ## Kabul kriterleri
 Must hikâyeler (US-01…US-08): **tüm senaryolar geçti.** Should hikâyeler (US-09, US-10): geçti; US-09 için ürün boşluğu kaydedildi (BUG-015).

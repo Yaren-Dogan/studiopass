@@ -12,10 +12,11 @@ import { LoginPage } from "./pages/LoginPage";
 import { MemberDetailPage } from "./pages/MemberDetailPage";
 import { MembersPage } from "./pages/MembersPage";
 import { PlansPage } from "./pages/PlansPage";
+import { DatabasePage } from "./pages/DatabasePage";
 import "./styles/tokens.css";
 import "./styles/app.css";
 
-const TITLES: Record<string, string> = { "/": "Özet", "/members": "Üyeler", "/classes": "Dersler", "/plans": "Planlar", "/login": "Giriş" };
+const TITLES: Record<string, string> = { "/": "Özet", "/members": "Üyeler", "/classes": "Dersler", "/plans": "Planlar", "/database": "Veritabanı", "/login": "Giriş" };
 
 function Routes() {
   const path = usePath();
@@ -50,6 +51,7 @@ function Routes() {
   else if (path === "/classes") page = <ClassesPage />;
   else if ((p = matchPath("/classes/:id", path))) page = <ClassDetailPage key={p.id} id={p.id} />;
   else if (path === "/plans") page = <PlansPage />;
+  else if (path === "/database" && user.role === "owner") page = <DatabasePage />;
   else page = <div className="empty"><p className="empty__title">Sayfa bulunamadı</p></div>;
 
   return <Layout>{page}</Layout>;

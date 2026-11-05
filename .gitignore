@@ -6,3 +6,4 @@ apps/web/playwright-report/
 .DS_Store
 .env
 docs/StudioPass-Proje-Dokumani.html
+apps/api/data/

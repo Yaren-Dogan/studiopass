@@ -9,6 +9,7 @@ const NAV: Array<{ to: string; label: string; icon: IconName; roles: Role[] }> =
   { to: "/members", label: "Üyeler", icon: "users", roles: ["owner", "manager", "instructor"] },
   { to: "/classes", label: "Dersler", icon: "calendar", roles: ["owner", "manager", "instructor"] },
   { to: "/plans", label: "Planlar", icon: "tag", roles: ["owner", "manager", "instructor"] },
+  { to: "/database", label: "Veritabanı", icon: "database", roles: ["owner"] },
 ];
 
 export function Layout({ children }: { children: ReactNode }) {

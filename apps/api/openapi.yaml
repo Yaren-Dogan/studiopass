@@ -259,6 +259,14 @@ paths:
       responses:
         "200": { description: Eğitmenler }
 
+  /api/admin/database:
+    get:
+      tags: [Özet]
+      summary: Veritabanı görüntüleyici — tablolar, görünümler, sütunlar, PK/FK ve satırlar (en fazla 200) — sadece sahip
+      description: Veriler SQLite'tan doğrudan SQL ile okunur. `users.password_hash` maskelenir.
+      responses:
+        "200": { description: Tablolar ve görünümler }
+        "403": { $ref: "#/components/responses/Forbidden" }
   /api/dashboard:
     get:
       tags: [Özet]

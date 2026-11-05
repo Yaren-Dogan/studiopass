@@ -7,7 +7,8 @@
 İhtiyaç analizinden tasarıma, geliştirmeden kabul testine kadar **uçtan uca** belgelenmiş bir ürün vaka çalışması.
 
 [![CI](https://github.com/Yaren-Dogan/studiopass/actions/workflows/ci.yml/badge.svg)](https://github.com/Yaren-Dogan/studiopass/actions/workflows/ci.yml)
-![Node 22](https://img.shields.io/badge/node-22-0F5C55)
+![Node 22.13+](https://img.shields.io/badge/node-22.13%2B-0F5C55)
+![SQLite](https://img.shields.io/badge/veritaban%C4%B1-SQLite-0F5C55)
 ![React 19](https://img.shields.io/badge/react-19-0F5C55)
 ![TypeScript](https://img.shields.io/badge/typescript-strict-0F5C55)
 ![WCAG 2.2 AA](https://img.shields.io/badge/WCAG-2.2%20AA-1D6B37)
@@ -27,8 +28,8 @@ Bir dijital ürün ekibinde her rolün ürettiği çıktı, aynı ürün üzerin
 | **İş analisti** | Problem tanımı, paydaşlar, As-Is / To-Be süreç, gereksinimler (FR/NFR/BR), veri modeli | [`docs/01-analiz`](docs/01-analiz) |
 | **Ürün sahibi** | Vizyon, yol haritası, RICE ile önceliklendirilmiş backlog, Gherkin kabul kriterleri, DoR/DoD | [`docs/02-urun`](docs/02-urun) · [hikâyeler](docs/01-analiz/kullanici-hikayeleri.md) |
 | **UX/UI tasarımcı** | Personalar, yolculuk haritası, bilgi mimarisi, akışlar, tasarım sistemi, **Figma** (Variables + bileşenler + ekranlar) | [`docs/03-ux-ui`](docs/03-ux-ui) · [`design/tokens.json`](design/tokens.json) |
-| **Yazılımcı** | React + TypeScript panel, Node.js REST API, OpenAPI/Swagger, mimari kararlar (ADR) | [`apps/`](apps) · [`docs/04-mimari`](docs/04-mimari) |
-| **Test / QA** | Test planı, karar tablosu, 32 senaryo, izlenebilirlik matrisi, **8 hata kaydı**, erişilebilirlik denetimi, tasarım↔uygulama karşılaştırması, 117 otomatik test | [`docs/05-test`](docs/05-test) |
+| **Yazılımcı** | React + TypeScript panel, Node.js REST API, SQLite veritabanı, OpenAPI/Swagger, mimari kararlar (ADR) | [`apps/`](apps) · [`docs/04-mimari`](docs/04-mimari) |
+| **Test / QA** | Test planı, karar tablosu, 32 senaryo, izlenebilirlik matrisi, **8 hata kaydı**, erişilebilirlik denetimi, tasarım↔uygulama karşılaştırması, 126 otomatik test | [`docs/05-test`](docs/05-test) |
 | **Proje koordinasyonu** | Proje planı (Gantt), RACI, risk kaydı, haftalık durum raporu, toplantı notları, sürüm notları | [`docs/06-proje-yonetimi`](docs/06-proje-yonetimi) · [`CHANGELOG.md`](CHANGELOG.md) |
 | **Yapay zekâ ile üretilen işin denetimi** | İncelemede yakalanan 6 gerçek sorun: yanlış pozitif test, StrictMode'da kırılan düzeltme, adsız menü bağlantıları… | [`docs/07-yapay-zeka-inceleme`](docs/07-yapay-zeka-inceleme/inceleme-notlari.md) |
 
@@ -60,13 +61,22 @@ npm run dev          # API → http://localhost:4000 · Web → http://localhost
 
 **Swagger UI:** http://localhost:4000/docs — `POST /api/auth/login` ile token alıp **Authorize**'a yapıştırın.
 
-> Veriler bellek içindedir ve her açılışta tohum verisiyle başlar ([ADR-004](docs/04-mimari/kararlar/ADR-004-veri-katmani.md)). Yalnız demo/test içindir.
+### Veritabanı
+Veriler **SQLite** dosyasında saklanır: `apps/api/data/studiopass.db` (ilk çalıştırmada demo verisiyle oluşur, sunucu kapansa da silinmez). Ek kurulum gerekmez.
+
+- **Panelde:** `elif@studiopass.dev` ile giriş yap → sol menüde **Veritabanı** (tablolar, sütunlar, PK/FK ve satırlar; yalnız stüdyo sahibine açık)
+- **Görsel program:** [DB Browser for SQLite](https://sqlitebrowser.org/dl/) ile dosyayı aç → *Browse Data*
+- **Terminal:** `npm run db:tablolar` (tablolar ve örnek satırlar) · `npm run db:sifirla` (demo verisine dön)
+
+![Veritabanı görüntüleyici](docs/assets/ekranlar/12-veritabani.png)
+
+Tablolar, kısıtlar, görünümler ve örnek SQL sorguları: [docs/04-mimari/veritabani.md](docs/04-mimari/veritabani.md)
 
 ## Testler
 
 ```bash
-npm test                 # API (48) + web birim (20)
-npm run e2e              # Playwright: masaüstü Chrome + mobil 390 px (36)
+npm test                 # API + veritabanı (53) + web birim (20)
+npm run e2e              # Playwright: masaüstü Chrome + mobil 390 px (38)
 npm run check:contrast   # Tasarım token kontrastı, WCAG 2.2 AA
 npm run lint             # TypeScript strict
 ```
@@ -77,7 +87,7 @@ Her test bir kabul kriterine bağlıdır (`TC-xx`). Hangi gereksinimin hangi tes
 
 ```
 apps/
-  api/        Node.js 22 REST API (çalışma zamanı bağımlılığı yok) · openapi.yaml · node:test
+  api/        Node.js 22 REST API (çalışma zamanı bağımlılığı yok) · SQLite (src/db) · openapi.yaml · node:test
   web/        React 19 + TypeScript · esbuild · Playwright e2e
 design/       tokens.json (Figma Variables ile birebir)
 docs/

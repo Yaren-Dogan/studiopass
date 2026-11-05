@@ -3,14 +3,20 @@
   "private": true,
   "version": "1.0.0",
   "description": "Butik stüdyolar için üyelik ve abonelik yönetim paneli (SaaS)",
-  "workspaces": ["apps/*"],
+  "workspaces": [
+    "apps/*"
+  ],
   "scripts": {
     "dev": "npm run dev -w apps/api & npm run dev -w apps/web",
     "build": "npm run build -w apps/api && npm run build -w apps/web",
     "test": "npm test -w apps/api && npm test -w apps/web",
     "lint": "npm run lint -w apps/api && npm run lint -w apps/web",
     "e2e": "npm run e2e -w apps/web",
-    "check:contrast": "python3 scripts/contrast-check.py"
+    "check:contrast": "python3 scripts/contrast-check.py",
+    "db:tablolar": "npm run db:tablolar -w @studiopass/api",
+    "db:sifirla": "npm run db:sifirla -w @studiopass/api"
   },
-  "engines": { "node": ">=20" }
+  "engines": {
+    "node": ">=22.13"
+  }
 }

@@ -41,6 +41,26 @@ def entity(name, desc, fields):
 <table class="tight"><thead><tr><th>Alan</th><th>Tip</th><th>Anahtar</th><th>Açıklama</th></tr></thead><tbody>{rows}</tbody></table></div>'''
 
 
+def db_samples() -> str:
+    """Gerçek veritabanı dosyasından örnek sorgu sonuçları (dosya yoksa atlanır)."""
+    import sqlite3
+    path = ROOT / "apps" / "api" / "data" / "studiopass.db"
+    if not path.exists():
+        return '<p class="cap">Örnek sorgu sonuçları için önce API\'yi bir kez çalıştırın.</p>'
+    con = sqlite3.connect(f"file:{path}?mode=ro", uri=True)
+    out = []
+    for title, sql in [
+        ("Üyelerin güncel durumu — <code>SELECT * FROM v_member_status LIMIT 8</code>", "SELECT uye, email, plan, bitis, durum FROM v_member_status LIMIT 8"),
+        ("Ders doluluğu — <code>SELECT * FROM v_class_occupancy LIMIT 6</code>", "SELECT ders, baslangic_istanbul, egitmen, kayitli, kapasite FROM v_class_occupancy LIMIT 6"),
+    ]:
+        cur = con.execute(sql)
+        head = [d[0] for d in cur.description]
+        out.append(f"<h3>{title}</h3>" + table(head, [[html.escape("" if v is None else str(v)) for v in r] for r in cur.fetchall()], "tight"))
+    counts = [[t, str(con.execute(f"SELECT count(*) FROM {t}").fetchone()[0])] for t in ["users", "members", "plans", "memberships", "class_sessions", "bookings"]]
+    con.close()
+    return '<p class="cap">Aşağıdaki tablolar <code>apps/api/data/studiopass.db</code> dosyasından bu PDF üretilirken alınan gerçek sorgu sonuçlarıdır.</p>' + "".join(out) + "<h3>Kayıt sayıları</h3>" + table(["Tablo", "Kayıt"], counts, "tight")
+
+
 CSS = """
 @page { size: A4; margin: 18mm 16mm 20mm; }
 * { box-sizing: border-box; }
@@ -105,7 +125,7 @@ def build() -> str:
     s = []
     # ------------------------------------------------------------------ Kapak
     s.append(f'''<section class="cover page">
-<div><p style="letter-spacing:.2em;font-size:9pt;opacity:.8">PROJE DOKÜMANI · v1.0</p>
+<div><p style="letter-spacing:.2em;font-size:9pt;opacity:.8">PROJE DOKÜMANI · v1.1</p>
 <h1>StudioPass</h1>
 <p class="sub">Butik spor, yoga ve pilates stüdyoları için üyelik ve abonelik yönetim paneli (SaaS)</p></div>
 <div class="meta">
@@ -149,16 +169,16 @@ def build() -> str:
 <h2>Bir bakışta</h2>
 <div class="kpis">
 <div class="kpi"><b>8</b><span>ekran (masaüstü, tablet, mobil)</span></div>
-<div class="kpi"><b>20</b><span>REST uç noktası + Swagger</span></div>
+<div class="kpi"><b>21</b><span>REST uç noktası + Swagger</span></div>
 <div class="kpi"><b>6</b><span>veri varlığı (tablo)</span></div>
-<div class="kpi"><b>117</b><span>otomatik test, CI'da yeşil</span></div>
+<div class="kpi"><b>126</b><span>otomatik test, CI'da yeşil</span></div>
 </div>
 <h2>Teknoloji</h2>
 {table(["Katman", "Teknoloji", "Neden"], [
         ["Ön yüz", "React 19, TypeScript (strict), esbuild", "Sektör standardı; hızlı derleme, az bağımlılık (ADR-003)"],
         ["API", "Node.js 22, yerleşik <code>http</code> ve <code>crypto</code> modülleri", "Çalışma zamanında sıfır dış bağımlılık, tamamen incelenebilir (ADR-002)"],
         ["Kimlik", "scrypt şifre özeti, HS256 JWT (8 saat)", "NFR-02 güvenlik gereksinimi"],
-        ["Veri", "Bellek içi depo + tohum verisi (v1.0) → PostgreSQL (v1.1)", "Hızlı ve deterministik testler (ADR-004)"],
+        ["Veritabanı", "SQLite (<code>node:sqlite</code>), tek dosya", "Sıfır bağımlılık, her SQLite aracıyla açılır (ADR-005)"],
         ["Test", "node:test, Playwright (Chromium, masaüstü + 390 px)", "Kabul kriterlerine bire bir bağlı testler"],
         ["Tasarım", "Figma (Variables, bileşenler), <code>design/tokens.json</code>", "Tasarım ve kod aynı token adlarını kullanır"],
         ["CI", "GitHub Actions", "Her push ve PR'da tip kontrolü, testler, e2e"],
@@ -175,6 +195,7 @@ def build() -> str:
         ["S-06", "Dersler", "Pazartesi başlangıçlı haftalık takvim, doluluk göstergesi", "Herkes"],
         ["S-07", "Ders detayı", "Katılımcı listesi, katılımcı ekleme ve iptal", "Herkes (eğitmen kendi dersine)"],
         ["S-08", "Planlar", "Plan oluşturma, satıştan kaldırma", "Sahip düzenler, diğerleri görür"],
+        ["S-09", "Veritabanı", "SQLite tabloları ve görünümleri: sütunlar, PK/FK, satırlar", "Sahip"],
     ])}
 <div class="grid2">
 <div>{img(E / "02-dashboard.png", alt="Özet", crop=0.625)}<p class="cap">S-02 Özet panel</p></div>
@@ -216,6 +237,7 @@ def build() -> str:
         ["Ders oluşturma (API)", y, y, n],
         ["Rezervasyon ekleme", y, y, '<span class="badge b-warn">Kendi dersine</span>'],
         ["Rezervasyon iptali", y, y, n],
+        ["Veritabanı görüntüleyici", y, n, n],
     ])}
 <h3>Demo hesapları (şifre: <code>Studio123!</code>)</h3>
 {table(["E-posta", "Ad", "Rol", "Sabit kimlik"], [
@@ -237,14 +259,14 @@ def build() -> str:
 <div>3 · Doğrulama — <code>lib/validate.ts</code></div>
 <div>4 · İş kuralları — <code>domain.ts</code>, <code>routes.ts</code></div></div></div>
 <div class="arrow">⇄</div>
-<div class="box"><b>Veri katmanı</b><code>store.ts</code><br>Bellek içi (v1.0)<br>PostgreSQL (v1.1)</div>
+<div class="box"><b>Veri katmanı</b><code>store.ts</code> · <code>db/</code><br>SQLite dosyası<br>data/studiopass.db</div>
 </div>
 <p>Tarayıcı ile API arasında JSON taşıyan REST istekleri vardır; kimlik <code>Authorization: Bearer &lt;JWT&gt;</code> başlığıyla gönderilir. Geliştirme sunucusu (<code>apps/web/build.mjs</code>) <code>/api</code> ile başlayan istekleri API'ye yönlendirir. Swagger arayüzü <code>/docs</code> adresindedir.</p>
 <h2>Depo yapısı</h2>
 <pre>apps/
   api/   src/lib/{{http,auth,validate,dates,text}}.ts · src/{{store,domain,routes,app,server}}.ts
-         openapi.yaml · test/*.test.ts (48 test)
-  web/   src/{{components,pages,lib,styles}} · test/ (20) · e2e/ (36) · build.mjs
+         openapi.yaml · src/db/{{schema.sql,sqlite.ts,cli.ts}} · test/*.test.ts (55 test)
+  web/   src/{{components,pages,lib,styles}} · test/ (20) · e2e/ (38) · build.mjs
 design/  tokens.json                 (Figma Variables ile aynı)
 docs/    01-analiz · 02-urun · 03-ux-ui · 04-mimari · 05-test · 06-proje-yonetimi · 07-yapay-zeka-inceleme
 .github/ workflows/ci.yml · ISSUE_TEMPLATE/ · pull_request_template.md
@@ -263,13 +285,14 @@ scripts/ contrast-check.py · build-docs-pdf.py</pre>
         ["ADR-001", "Tek depo (npm workspaces): API + web + doküman", "Bir PR'da kod, test ve doküman birlikte incelenir"],
         ["ADR-002", "API'de dış bağımlılık yok", "Güvenlik yüzeyi küçük; OpenAPI elle güncel tutulur"],
         ["ADR-003", "React + esbuild, yönlendirici kütüphanesi yok", "Yalnız react ve react-dom bağımlılığı"],
-        ["ADR-004", "v1.0 bellek içi veri, v1.1 PostgreSQL", "Testler hızlı ve deterministik; veri kalıcı değil"],
+        ["ADR-004", "v1.0 bellek içi veri", "ADR-005 ile güncellendi"],
+        ["ADR-005", "SQLite ile kalıcı depolama (node:sqlite)", "Veri kalıcı ve görüntülenebilir; tek sunucu ölçeği"],
     ])}
 </section>''')
 
     # ------------------------------------------------------------------ 5. Veritabanı
     s.append(f'''<section class="page"><h1>5. Veritabanı ve veri modeli</h1>
-<div class="note"><b>Şu anki durum (v1.0):</b> Veriler <b>bellek içinde</b> tutulur (<code>apps/api/src/store.ts</code>). Sunucu her açıldığında tohum verisiyle başlar ve kapanınca veriler silinir. Bu bilinçli bir karardır (ADR-004): demo ve otomatik testler için hızlı ve tekrarlanabilir bir ortam sağlar. Kalıcı veritabanı olarak <b>PostgreSQL</b> v1.1'de eklenecek; tablo yapısı aşağıdaki modelle aynı olacak.</div>
+<div class="note ok"><b>Veritabanı: SQLite.</b> Veriler <code>apps/api/data/studiopass.db</code> dosyasında saklanır; sunucu kapansa da silinmez. Ek kurulum gerekmez: Node.js 22.13+ ile gelen <code>node:sqlite</code> modülü kullanılır (ADR-005). İlk çalıştırmada dosya demo verisiyle oluşur. Şema: <code>apps/api/src/db/schema.sql</code>. Tablolarda <b>UNIQUE, CHECK ve yabancı anahtar</b> kısıtları vardır; ayrıca iki hazır görünüm (<code>v_member_status</code>, <code>v_class_occupancy</code>) bulunur.</div>
 <h2>Varlıklar ve ilişkiler</h2>
 <pre>USER (eğitmen) ──1:N──▶ CLASS_SESSION ──1:N──▶ BOOKING ◀──N:1── MEMBER
                                                                  │
@@ -338,20 +361,32 @@ PLAN ──1:N──▶ MEMBERSHIP ◀──────────────
         ["BOOKING", "66", "Yalnız aktif üyelerle"],
     ])}
 <p>Tarihler "bugün"e göre üretilir; böylece demo her gün anlamlı görünür. Testlerde <code>STUDIOPASS_TODAY=2026-11-04</code> ile gün sabitlenir.</p>
-<h2>v1.1 için planlanan PostgreSQL şeması (taslak)</h2>
-<pre>CREATE TABLE users (id text PRIMARY KEY, name text NOT NULL, email citext UNIQUE NOT NULL,
-  password_hash text NOT NULL, role text NOT NULL CHECK (role IN ('owner','manager','instructor')));
-CREATE TABLE members (id uuid PRIMARY KEY, first_name text NOT NULL, last_name text NOT NULL,
-  email citext UNIQUE NOT NULL, phone text, is_active boolean NOT NULL DEFAULT true, created_at timestamptz NOT NULL);
-CREATE TABLE plans (id uuid PRIMARY KEY, name text NOT NULL, price_kurus int NOT NULL CHECK (price_kurus &gt; 0),
-  duration_days int NOT NULL CHECK (duration_days BETWEEN 1 AND 730), monthly_class_limit int, is_on_sale boolean NOT NULL);
-CREATE TABLE memberships (id uuid PRIMARY KEY, member_id uuid NOT NULL REFERENCES members,
-  plan_id uuid NOT NULL REFERENCES plans, start_date date NOT NULL, end_date date NOT NULL);
-CREATE TABLE class_sessions (id uuid PRIMARY KEY, title text NOT NULL, instructor_id text NOT NULL REFERENCES users,
-  starts_at timestamptz NOT NULL, duration_min int NOT NULL, capacity int NOT NULL CHECK (capacity BETWEEN 1 AND 50));
-CREATE TABLE bookings (id uuid PRIMARY KEY, member_id uuid NOT NULL REFERENCES members,
-  class_id uuid NOT NULL REFERENCES class_sessions, created_at timestamptz NOT NULL, UNIQUE (member_id, class_id));</pre>
-<p class="cap">Not: Bu şema henüz uygulanmadı; v1.1 planıdır. Kapasite kontrolü veritabanında eşzamanlı isteklere karşı satır kilidi (<code>SELECT … FOR UPDATE</code>) ile korunacak.</p>
+<h2>Veritabanını görüntüleme</h2>
+<p><b>En kolay yol, panelin içinden:</b> <code>elif@studiopass.dev</code> (stüdyo sahibi) ile giriş yap → sol menüde <b>Veritabanı</b>. Her tablo ve görünüm; sütun tipleri, birincil (PK) ve yabancı anahtarlar (FK) ve satırlarıyla, doğrudan SQL ile okunarak gösterilir. Şifre özetleri gizlenir; sayfa yalnız sahip rolüne açıktır.</p>
+{img(E / "12-veritabani.png", alt="Veritabanı görüntüleyici")}<p class="cap">Panel › Veritabanı — <code>members</code> tablosu</p>
+<p><b>Diğer yollar:</b></p>
+<ol>
+<li>API'yi bir kez çalıştır: <code>npm run dev -w @studiopass/api</code> → <code>apps/api/data/studiopass.db</code> oluşur.</li>
+<li><b>DB Browser for SQLite</b> (ücretsiz, sqlitebrowser.org) ile dosyayı aç → <i>Browse Data</i> sekmesinde tabloyu seç.</li>
+<li>Ya da terminalden: <code>npm run db:tablolar</code> (kayıt sayıları ve örnek satırlar) · <code>npm run db:sifirla</code> (demo verisine dön).</li>
+</ol>
+<div class="note">API çalışırken veritabanını <b>okumak</b> için aç. DB Browser'da elle yapılan değişiklikler API'nin bir sonraki kaydında üzerine yazılır; elle düzenleme için önce API'yi durdur.</div>
+{db_samples()}
+<h2>Şemadan örnek (<code>apps/api/src/db/schema.sql</code>)</h2>
+<pre>CREATE TABLE bookings (
+  id         TEXT PRIMARY KEY,
+  member_id  TEXT NOT NULL REFERENCES members(id),
+  class_id   TEXT NOT NULL REFERENCES class_sessions(id),
+  created_at TEXT NOT NULL,
+  UNIQUE (member_id, class_id)      -- aynı üye aynı derse iki kez yazılamaz
+);
+CREATE TABLE plans (
+  ...
+  price_kurus   INTEGER NOT NULL CHECK (price_kurus &gt; 0),      -- KDV dahil, kuruş
+  duration_days INTEGER NOT NULL CHECK (duration_days BETWEEN 1 AND 730),
+  is_on_sale    INTEGER NOT NULL DEFAULT 1                    -- plan silinmez, satıştan kalkar
+);</pre>
+<p class="cap">Kısıtlar iş kurallarını veritabanı seviyesinde de korur: uygulamada bir hata olsa bile mükerrer rezervasyon ya da mükerrer e-posta yazılamaz (testlerle doğrulandı).</p>
 </section>''')
 
     # ------------------------------------------------------------------ 6. API
@@ -378,6 +413,7 @@ CREATE TABLE bookings (id uuid PRIMARY KEY, member_id uuid NOT NULL REFERENCES m
         ["DELETE", "/api/classes/:id/bookings/:bookingId", "Rezervasyon iptali", "Sahip, Yönetici"],
         ["GET", "/api/instructors", "Eğitmen listesi", "Giriş yapmış"],
         ["GET", "/api/dashboard", "Özet göstergeler", "Sahip, Yönetici"],
+        ["GET", "/api/admin/database", "Veritabanı görüntüleyici: tablolar, PK/FK, satırlar", "Sahip"],
     ])}
 <h2>Hata sözleşmesi</h2>
 <pre>{{ "error": {{ "code": "EMAIL_TAKEN", "message": "Bu e-posta ile kayıtlı bir üye zaten var",
@@ -458,12 +494,12 @@ CREATE TABLE bookings (id uuid PRIMARY KEY, member_id uuid NOT NULL REFERENCES m
     # ------------------------------------------------------------------ 9. Test
     s.append(f'''<section class="page"><h1>9. Test ve kalite güvencesi</h1>
 <div class="kpis">
-<div class="kpi"><b>48</b><span>API testi (birim + entegrasyon)</span></div>
+<div class="kpi"><b>55</b><span>API + veritabanı testi</span></div>
 <div class="kpi"><b>20</b><span>ön yüz birim testi</span></div>
-<div class="kpi"><b>36</b><span>uçtan uca (Playwright)</span></div>
+<div class="kpi"><b>38</b><span>uçtan uca (Playwright)</span></div>
 <div class="kpi"><b>13</b><span>kontrast çifti (WCAG AA)</span></div>
 </div>
-<p>Toplam <b>117</b> kontrol, GitHub Actions'ta her push'ta çalışır ve şu anda yeşildir. Her test bir kabul kriterine (<code>TC-xx</code>) bağlıdır; hangi gereksinimin hangi testle korunduğu izlenebilirlik matrisindedir.</p>
+<p>Toplam <b>126</b> kontrol, GitHub Actions'ta her push'ta çalışır ve şu anda yeşildir. Her test bir kabul kriterine (<code>TC-xx</code>) bağlıdır; hangi gereksinimin hangi testle korunduğu izlenebilirlik matrisindedir.</p>
 <h2>Test yaklaşımı</h2>
 <ul>
 <li><b>Sınır değer analizi:</b> kapasite N-1 / N / N+1, bitiş tarihi dün / bugün / yarın, kapasite 0 / 1 / 50 / 51.</li>
@@ -530,11 +566,11 @@ npm test                 # API + web birim testleri
 npm run e2e              # Playwright (ilk sefer: npx playwright install chromium)
 npm run check:contrast   # WCAG kontrast kontrolü
 npm run lint             # TypeScript tip kontrolü</pre>
-<p>Gereksinim: Node.js 22 veya üstü. Ek veritabanı kurulumu gerekmez (v1.0 bellek içi).</p>
+<p>Gereksinim: Node.js 22.13 veya üstü. Ek veritabanı kurulumu gerekmez; SQLite dosyası ilk çalıştırmada oluşur. Veritabanına bakmak için: <code>npm run db:tablolar</code> veya DB Browser for SQLite.</p>
 
 <h1>12. Bilinen sınırlamalar ve yol haritası</h1>
 {table(["Konu", "Durum", "Plan"], [
-        ["Kalıcı veritabanı", "Bellek içi; sunucu kapanınca veri silinir", "v1.1 PostgreSQL + Docker Compose"],
+        ["Veritabanı ölçeği", "SQLite, her değişiklikte tüm tablolar yazılır (demo ölçeği)", "v1.2 satır bazlı sorgular + PostgreSQL"],
         ["Ders oluşturma arayüzü", "Yalnız API'de", "v1.1 tekrarlayan ders şablonu"],
         ["Ekran okuyucu testi", "Otomatik kontroller var, NVDA/VoiceOver yapılmadı", "v1.0.1"],
         ["Safari / Firefox", "CI yalnız Chromium", "v1.0.1 manuel tur"],

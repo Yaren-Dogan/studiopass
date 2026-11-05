@@ -1,5 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { hashPassword, type Role } from "./lib/auth.js";
+import type { DatabaseSync } from "node:sqlite";
+import { loadDb, openDatabase, saveDb } from "./db/sqlite.js";
 import { addDays, startOfWeek, today, type IsoDate } from "./lib/dates.js";
 
 export interface User { id: string; name: string; email: string; passwordHash: string; role: Role }
@@ -125,4 +127,40 @@ export function createSeedDb(): Db {
 }
 
 export let db: Db = createSeedDb();
-export function resetDb() { db = createSeedDb(); }
+
+// ---------- Kalıcı depolama (SQLite, ADR-005)
+let conn: DatabaseSync | null = null;
+let connPath: string | null = null;
+export const persistencePath = () => connPath;
+
+/** Veritabanı dosyasını açar; boşsa tohum verisiyle doldurur, doluysa verileri belleğe yükler. */
+export function initPersistence(path: string) {
+  conn = openDatabase(path);
+  connPath = path;
+  const loaded = loadDb(conn);
+  if (loaded) db = loaded;
+  else saveDb(conn, db);
+  return { path, loaded: !!loaded };
+}
+
+/** Başarılı her değişiklikten sonra çağrılır. Test ortamında (bağlantı yoksa) hiçbir şey yapmaz. */
+export function persist() {
+  if (!conn) return;
+  try {
+    saveDb(conn, db);
+  } catch (err) {
+    // Veritabanı kısıtı ihlal edildiyse bellek, son tutarlı duruma (dosyadaki veriye) geri döner.
+    db = loadDb(conn) ?? createSeedDb();
+    throw err;
+  }
+}
+
+export function resetDb() { db = createSeedDb(); persist(); }
+
+/** Veritabanı görüntüleyici için SQL bağlantısı. Kalıcı dosya yoksa (test ortamı) bellekteki veriden geçici bir SQLite kopyası açılır. */
+export function sqlConnection(): DatabaseSync {
+  if (conn) return conn;
+  const temp = openDatabase(":memory:");
+  saveDb(temp, db);
+  return temp;
+}

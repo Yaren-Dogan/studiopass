@@ -9,7 +9,7 @@ flowchart LR
     R[Yönlendirici<br/>lib/http.ts] --> A[Kimlik + rol<br/>lib/auth.ts]
     A --> V[Doğrulama<br/>lib/validate.ts]
     V --> D[İş kuralları<br/>domain.ts · routes.ts]
-    D --> S[(Veri katmanı<br/>store.ts)]
+    D --> S[(SQLite<br/>data/studiopass.db)]
   end
   B -- "REST · JSON · JWT (Bearer)" --> R
   B -. "/docs" .-> SW[Swagger UI<br/>openapi.yaml]
@@ -23,7 +23,7 @@ flowchart LR
 | Kimlik | `lib/auth.ts` | scrypt ile şifre, HS256 JWT (8 saat), `requireRole()` |
 | Doğrulama | `lib/validate.ts` | Alan bazlı hata toplama → `400 { fields }` |
 | İş kuralları | `domain.ts`, `routes.ts` | Üyelik durumu, rol bazlı görünüm, rezervasyon karar tablosu |
-| Veri | `store.ts` | Bellek içi depo + tohum verisi (v1.0); arayüzü korunarak PostgreSQL'e geçilecek (ADR-004) |
+| Veri | `store.ts`, `db/sqlite.ts`, `db/schema.sql` | SQLite dosyası (`data/studiopass.db`); ayrıntı: [veritabani.md](veritabani.md) (ADR-005) |
 | Ön yüz | `apps/web/src` | Sayfalar, bileşenler (Figma ile aynı adlar), API istemcisi, yönlendirici |
 
 ## Hata sözleşmesi

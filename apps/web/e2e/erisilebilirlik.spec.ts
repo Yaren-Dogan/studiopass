@@ -16,6 +16,7 @@ test.describe("Erişilebilirlik", () => {
   test("'İçeriğe geç' bağlantısı ilk odaklanan öğedir (2.4.1)", async ({ page }) => {
     await loginAs(page, "manager");
     await page.reload(); // ilk yüklemede odak sıfırdan başlar
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible(); // oturum doğrulanıp sayfa çizilene kadar bekle
     await page.keyboard.press("Tab");
     const skip = page.getByRole("link", { name: "İçeriğe geç" });
     await expect(skip).toBeFocused();

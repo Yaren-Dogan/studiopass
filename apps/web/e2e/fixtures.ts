@@ -24,7 +24,7 @@ export async function goTo(page: Page, label: "Özet" | "Üyeler" | "Dersler" | 
 export const test = base.extend<{ resetData: void }>({
   resetData: [
     async ({ request }, use) => {
-      const res = await request.post("http://localhost:4000/api/test/reset");
+      const res = await request.post("http://localhost:4100/api/test/reset");
       expect(res.ok(), "API E2E=1 ile çalışmalı").toBeTruthy();
       await use();
     },

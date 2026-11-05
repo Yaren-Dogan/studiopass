@@ -2,10 +2,10 @@ import { expect, goTo, loginAs, test } from "./fixtures";
 
 /** NFR-05: 390 px genişlikte ana akışlar */
 test.describe("Mobil (390 px)", () => {
-  test("alt menü görünür ve yatay kaydırma yoktur", async ({ page }) => {
-    await loginAs(page, "manager");
+  test("alt menü görünür ve yatay kaydırma yoktur (en çok menü öğesi olan sahip rolüyle)", async ({ page }) => {
+    await loginAs(page, "owner");
     await expect(page.getByRole("navigation", { name: "Ana menü" })).toBeVisible();
-    for (const path of ["/", "/members", "/classes", "/plans"]) {
+    for (const path of ["/", "/members", "/classes", "/plans", "/database"]) {
       await page.goto(path);
       await page.waitForLoadState("networkidle");
       const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);

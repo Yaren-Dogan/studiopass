@@ -24,6 +24,13 @@ export interface Dashboard {
   planDistribution: Array<{ planId: string; name: string; count: number }>;
 }
 
+export interface DbObject {
+  name: string; kind: "table" | "view"; total: number;
+  columns: Array<{ name: string; type: string; primaryKey: boolean; notNull: boolean }>;
+  foreignKeys: Array<{ column: string; references: string }>;
+  rows: Array<Record<string, unknown>>;
+}
+
 export class ApiError extends Error {
   constructor(public status: number, public code: string, message: string, public fields: Record<string, string> = {}) {
     super(message);
@@ -74,6 +81,7 @@ const qs = (params: Record<string, string | number | undefined>) => {
 export const api = {
   login: (email: string, password: string) => request<{ token: string; user: User }>("POST", "/api/auth/login", { email, password }),
   me: () => request<{ user: User }>("GET", "/api/auth/me"),
+  database: () => request<{ engine: string; file: string; items: DbObject[] }>("GET", "/api/admin/database"),
   dashboard: () => request<Dashboard>("GET", "/api/dashboard"),
   members: (p: { search?: string; status?: string; page?: number }) => request<Paged<Member>>("GET", `/api/members${qs(p)}`),
   member: (id: string) => request<MemberDetail>("GET", `/api/members/${id}`),

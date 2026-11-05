@@ -1,6 +1,6 @@
 # ADR-004 · v1.0'da bellek içi veri, v1.1'de PostgreSQL
 
-- **Durum:** Kabul edildi
+- **Durum:** v1.0 kısmı [ADR-005](ADR-005-sqlite.md) ile güncellendi (SQLite kalıcı depolama)
 
 ## Bağlam
 v1.0 hedefi pilot stüdyolarla akışları doğrulamak ve kabul testlerini otomatikleştirmek. Kalıcı veri, yedekleme ve göç (migration) altyapısı bu aşamada geri bildirimi yavaşlatıyor.

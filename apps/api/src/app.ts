@@ -3,6 +3,7 @@ import { createServer, type IncomingMessage, type ServerResponse } from "node:ht
 import { fileURLToPath } from "node:url";
 import { HttpError, readBody, sendJson, type Ctx } from "./lib/http.js";
 import { buildRouter } from "./routes.js";
+import { persist } from "./store.js";
 
 const openapiPath = fileURLToPath(new URL("../openapi.yaml", import.meta.url));
 const ALLOWED_ORIGINS = (process.env.CORS_ORIGINS ?? "http://localhost:5173").split(",");
@@ -49,6 +50,7 @@ export function createApp() {
       const ctx: Ctx = { req, res, params: match.params, query: url.searchParams, body: await readBody(req) };
       let result: unknown;
       for (const h of match.route.handlers) result = await h(ctx);
+      if (req.method !== "GET") persist(); // değişiklik başarılıysa veritabanına yaz
       const status = res.statusCode && res.statusCode !== 200 ? res.statusCode : 200;
       sendJson(res, status, result);
       log(req, status, startedAt);

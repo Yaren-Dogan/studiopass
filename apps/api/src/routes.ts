@@ -1,10 +1,12 @@
+import { relative } from "node:path";
+import { fileURLToPath } from "node:url";
 import { requireAuth, requireRole, signToken, verifyPassword } from "./lib/auth.js";
 import { addDays, endOfMonth, isIsoDate, nowMs, startOfWeek, today } from "./lib/dates.js";
 import { HttpError, Router, type Ctx } from "./lib/http.js";
 import { normalizeTr } from "./lib/text.js";
 import { rules as r, validate } from "./lib/validate.js";
 import { bookingCount, currentMembership, memberStatus, toClassDto, toMemberDto, toPlanDto, type MemberStatus } from "./domain.js";
-import { db, newId, resetDb, type Member } from "./store.js";
+import { db, newId, persistencePath, resetDb, sqlConnection, type Member } from "./store.js";
 
 export const PAGE_SIZE = 20; // FR-13
 
@@ -298,6 +300,29 @@ export function buildRouter() {
       weekOccupancy: { booked, capacity, rate: capacity ? Math.round((booked / capacity) * 100) : 0, classCount: weekClasses.length },
       planDistribution,
       monthlyRevenueKurus,
+    };
+  });
+
+  // ---------- Veritabanı görüntüleyici (yalnız sahip). Veriler doğrudan SQL ile okunur.
+  router.get("/api/admin/database", requireAuth, owner, () => {
+    const c = sqlConnection();
+    const MAX_ROWS = 200;
+    const describe = (name: string, kind: "table" | "view") => {
+      const columns = (c.prepare(`PRAGMA table_info(${name})`).all() as Array<{ name: string; type: string; pk: number; notnull: number }>)
+        .map((col) => ({ name: col.name, type: col.type || "—", primaryKey: col.pk > 0, notNull: col.notnull === 1 }));
+      const foreignKeys = kind === "table"
+        ? (c.prepare(`PRAGMA foreign_key_list(${name})`).all() as Array<{ from: string; table: string; to: string }>).map((f) => ({ column: f.from, references: `${f.table}.${f.to}` }))
+        : [];
+      const total = Number((c.prepare(`SELECT count(*) AS n FROM ${name}`).get() as { n: number }).n);
+      const rows = (c.prepare(`SELECT * FROM ${name} LIMIT ${MAX_ROWS}`).all() as Array<Record<string, unknown>>)
+        .map((r) => ("password_hash" in r ? { ...r, password_hash: "•••• (scrypt özeti gizlendi)" } : r));
+      return { name, kind, columns, foreignKeys, total, rows };
+    };
+    const objects = c.prepare("SELECT name, type FROM sqlite_master WHERE type IN ('table','view') AND name NOT LIKE 'sqlite_%' ORDER BY type, rowid").all() as Array<{ name: string; type: "table" | "view" }>;
+    return {
+      engine: "SQLite",
+      file: persistencePath() ? relative(fileURLToPath(new URL("../../..", import.meta.url)), persistencePath()!) : "bellek (test ortamı, dosya yok)",
+      items: objects.map((o) => describe(o.name, o.type)),
     };
   });
 
