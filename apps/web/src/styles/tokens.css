@@ -1,0 +1,51 @@
+/* design/tokens.json ile birebir eşleşir. Değer değişikliği önce Figma'da yapılır, sonra buraya aktarılır. */
+:root {
+  /* Renk — semantik */
+  --bg-canvas: #f7f5f0;
+  --bg-surface: #ffffff;
+  --bg-subtle: #eeebe3;
+  --text-primary: #1b2320;
+  --text-secondary: #5a6460;
+  --text-on-action: #ffffff;
+  --border-subtle: #ddd8cc;
+  --border-control: #7d8580;
+  --action-primary: #0f5c55;
+  --action-primary-hover: #08332f;
+  --action-primary-soft: #e8f2f0;
+  --action-focus: #a84b25;
+  --status-active-bg: #dcf0e2;
+  --status-active-fg: #1d6b37;
+  --status-warning-bg: #fbebc8;
+  --status-warning-fg: #7f5300;
+  --status-danger-bg: #fbe0dd;
+  --status-danger-fg: #ae2418;
+
+  /* Tipografi */
+  --font-display: "Fraunces", Georgia, serif;
+  --font-body: "Manrope", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --fs-xs: 12px;
+  --fs-sm: 14px;
+  --fs-md: 16px;
+  --fs-lg: 20px;
+  --fs-xl: 28px;
+  --fs-2xl: 36px;
+
+  /* Boşluk (4 px taban) */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-6: 24px;
+  --sp-8: 32px;
+  --sp-12: 48px;
+
+  /* Köşe yarıçapı */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-pill: 999px;
+
+  --shadow-raised: 0 1px 2px rgb(27 35 32 / 0.06), 0 4px 16px rgb(27 35 32 / 0.06);
+  --sidebar-width: 240px;
+  --tap-target: 44px;
+}
