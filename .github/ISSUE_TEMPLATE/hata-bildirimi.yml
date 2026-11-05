@@ -1,0 +1,60 @@
+name: 🐞 Hata bildirimi
+description: Başkasının ilk denemede tekrarlayabileceği bir hata raporu
+title: "BUG: "
+labels: ["hata", "triage"]
+body:
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Önem
+      options: ["Kritik — veri kaybı / güvenlik / ana akış çalışmıyor", "Yüksek — ana akış hatalı, geçici çözüm yok", "Orta — çalışıyor ama yanıltıcı/zor", "Düşük — görsel/metin kusuru"]
+    validations: { required: true }
+  - type: dropdown
+    id: layer
+    attributes:
+      label: Katman (biliniyorsa)
+      options: ["Bilinmiyor", "Ön yüz", "API", "Tasarım / Figma", "İçerik / metin"]
+  - type: input
+    id: env
+    attributes:
+      label: Ortam
+      placeholder: "Test ortamı · Chrome 1xx · macOS · 1440 px · commit abc1234"
+    validations: { required: true }
+  - type: input
+    id: refs
+    attributes:
+      label: İlgili hikâye / gereksinim / test
+      placeholder: "US-08 · FR-10 · TC-24"
+  - type: textarea
+    id: pre
+    attributes:
+      label: Ön koşul
+      placeholder: "Veriler sıfırlanmış, yönetici (mert@studiopass.dev) ile giriş yapılmış"
+  - type: textarea
+    id: steps
+    attributes:
+      label: Adımlar
+      value: "1. \n2. \n3. "
+    validations: { required: true }
+  - type: textarea
+    id: expected
+    attributes:
+      label: Beklenen
+      description: Kabul kriterinden ya da Figma'dan
+    validations: { required: true }
+  - type: textarea
+    id: actual
+    attributes:
+      label: Gerçekleşen
+      description: Hata mesajını tam olarak yazın
+    validations: { required: true }
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Kanıt
+      description: Ekran görüntüsü, ağ isteği (yöntem, URL, durum kodu, gövde), konsol hatası
+  - type: textarea
+    id: where
+    attributes:
+      label: Ön yüz mü, sunucu mu?
+      description: Ağ sekmesinde istek ve yanıt doğru mu? Yanıt doğru ve ekran yanlışsa ön yüz; yanıt yanlışsa sunucu.

@@ -1,0 +1,35 @@
+name: 📗 Kullanıcı hikâyesi
+description: Yeni bir özellik ya da değişiklik
+title: "US-XX: "
+labels: ["hikâye"]
+body:
+  - type: textarea
+    id: story
+    attributes:
+      label: Hikâye
+      value: "**Bir** [rol] **olarak**, [amaç] **istiyorum**, **böylece** [fayda]."
+    validations: { required: true }
+  - type: textarea
+    id: ac
+    attributes:
+      label: Kabul kriterleri (Gherkin)
+      render: gherkin
+      value: |
+        Senaryo: 
+          Verilen 
+          Eğer 
+          O zaman 
+    validations: { required: true }
+  - type: input
+    id: figma
+    attributes:
+      label: Figma bağlantısı
+  - type: checkboxes
+    id: dor
+    attributes:
+      label: Hazır olma tanımı (DoR)
+      options:
+        - label: Mutlu yol + en az 2 hata durumu yazıldı
+        - label: Figma ekranı "Ready for dev"
+        - label: API sözleşmesi (openapi.yaml) taslağı var ya da gerek yok
+        - label: Tahmin verildi
